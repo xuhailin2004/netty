@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundMessageHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.ChannelStateHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
@@ -140,7 +141,7 @@ public final class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, Se
     }
 
     @Override
-    ChannelFuture doBind(SocketAddress localAddress) {
+    ChannelFuture doBind(final SocketAddress localAddress) {
         Channel channel = channelFactory().newChannel();
 
         try {
@@ -186,12 +187,24 @@ public final class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, Se
             }
         });
 
-        ChannelFuture f = group().register(channel).awaitUninterruptibly();
-        if (!f.isSuccess()) {
+        ChannelFuture f = group().register(channel);
+        if (f.cause() != null) {
             return f;
+        } else {
+            final ChannelPromise promise = channel.newPromise();
+            f.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (future.isSuccess()) {
+                        future.channel().bind(localAddress, promise).
+                                addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                    } else {
+                        promise.setFailure(future.cause());
+                    }
+                }
+            });
+            return promise;
         }
-
-        return channel.bind(localAddress).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
     }
 
     @Override
@@ -275,7 +288,16 @@ public final class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, Se
                 }
 
                 try {
-                    childGroup.register(child);
+                    childGroup.register(child).addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            if (!future.isSuccess()) {
+                                Channel channel = future.channel();
+                                channel.unsafe().closeForcibly();
+                                logger.warn("Failed to register an accepted channel: " + channel, future.cause());
+                            }
+                        }
+                    });
                 } catch (Throwable t) {
                     child.unsafe().closeForcibly();
                     logger.warn("Failed to register an accepted channel: " + child, t);

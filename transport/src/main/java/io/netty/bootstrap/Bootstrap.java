@@ -20,6 +20,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -141,28 +142,41 @@ public final class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
     /**
      * @see {@link #connect()}
      */
-    private ChannelFuture doConnect(SocketAddress remoteAddress, SocketAddress localAddress) {
+    private ChannelFuture doConnect(final SocketAddress remoteAddress, final SocketAddress localAddress) {
         final Channel channel = channelFactory().newChannel();
 
         try {
-            init(channel);
+            ChannelFuture future = init(channel).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+            if (future.cause() != null)  {
+                return future;
+            } else {
+                final ChannelPromise promise = channel.newPromise();
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (future.isSuccess()) {
+                            if (localAddress == null) {
+                                future = channel.connect(remoteAddress, promise);
+                            } else {
+                                future = channel.connect(remoteAddress, localAddress, promise);
+                            }
+                            future.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                        } else {
+                            promise.setFailure(future.cause());
+                        }
+                    }
+                });
+                return promise;
+            }
+
         } catch (Throwable t) {
             channel.close();
             return channel.newFailedFuture(t);
         }
-
-        final ChannelFuture future;
-        if (localAddress == null) {
-            future = channel.connect(remoteAddress);
-        } else {
-            future = channel.connect(remoteAddress, localAddress);
-        }
-
-        return future.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
     }
 
     @SuppressWarnings("unchecked")
-    private void init(Channel channel) throws Exception {
+    private ChannelFuture init(Channel channel) {
         ChannelPipeline p = channel.pipeline();
         p.addLast(handler());
 
@@ -186,7 +200,7 @@ public final class Bootstrap extends AbstractBootstrap<Bootstrap, Channel> {
             }
         }
 
-        group().register(channel).syncUninterruptibly();
+        return group().register(channel);
     }
 
     @Override

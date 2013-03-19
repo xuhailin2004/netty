@@ -23,6 +23,8 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+
 import static org.junit.Assert.*;
 
 public abstract class AbstractEventLoopTest {
@@ -31,11 +33,12 @@ public abstract class AbstractEventLoopTest {
      * Test for https://github.com/netty/netty/issues/803
      */
     @Test
-    public void testReregister() {
+    public void testReregister() throws Exception {
         EventLoopGroup group = newEventLoopGroup();
         EventLoopGroup group2 = newEventLoopGroup();
         final EventExecutorGroup eventExecutorGroup = new DefaultEventExecutorGroup(2);
 
+        final CountDownLatch latch = new CountDownLatch(1);
         ServerBootstrap bootstrap = new ServerBootstrap();
         ChannelFuture future = bootstrap.channel(newChannel()).group(group)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
@@ -48,11 +51,11 @@ public abstract class AbstractEventLoopTest {
                     public void initChannel(ServerSocketChannel ch) throws Exception {
                         ch.pipeline().addLast(new TestChannelHandler());
                         ch.pipeline().addLast(eventExecutorGroup, new TestChannelHandler2());
-
+                        latch.countDown();
                     }
                 })
                 .bind(0).awaitUninterruptibly();
-
+        latch.await();
         EventExecutor executor = future.channel().pipeline().context(TestChannelHandler2.class).executor();
         EventExecutor executor1 = future.channel().pipeline().context(TestChannelHandler.class).executor();
         future.channel().deregister().awaitUninterruptibly();
