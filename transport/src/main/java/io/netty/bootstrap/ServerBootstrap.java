@@ -187,7 +187,7 @@ public final class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, Se
             }
         });
 
-        ChannelFuture f = group().register(channel);
+        ChannelFuture f = group().register(channel).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
         if (f.cause() != null) {
             return f;
         } else {
