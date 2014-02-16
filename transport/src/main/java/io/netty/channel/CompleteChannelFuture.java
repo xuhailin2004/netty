@@ -24,7 +24,7 @@ import io.netty.util.concurrent.GenericFutureListener;
  * A skeletal {@link ChannelFuture} implementation which represents a
  * {@link ChannelFuture} which has been completed already.
  */
-abstract class CompleteChannelFuture extends CompleteFuture<Void> implements ChannelFuture {
+abstract class CompleteChannelFuture extends CompleteFuture implements ChannelFuture {
 
     private final Channel channel;
 
@@ -52,25 +52,25 @@ abstract class CompleteChannelFuture extends CompleteFuture<Void> implements Cha
     }
 
     @Override
-    public ChannelFuture addListener(GenericFutureListener<? extends Future<Void>> listener) {
+    public ChannelFuture addListener(GenericFutureListener<? extends Future> listener) {
         super.addListener(listener);
         return this;
     }
 
     @Override
-    public ChannelFuture addListeners(GenericFutureListener<? extends Future<Void>>... listeners) {
+    public ChannelFuture addListeners(GenericFutureListener<? extends Future>... listeners) {
         super.addListeners(listeners);
         return this;
     }
 
     @Override
-    public ChannelFuture removeListener(GenericFutureListener<? extends Future<Void>> listener) {
+    public ChannelFuture removeListener(GenericFutureListener<? extends Future> listener) {
         super.removeListener(listener);
         return this;
     }
 
     @Override
-    public ChannelFuture removeListeners(GenericFutureListener<? extends Future<Void>>... listeners) {
+    public ChannelFuture removeListeners(GenericFutureListener<? extends Future>... listeners) {
         super.removeListeners(listeners);
         return this;
     }
@@ -98,10 +98,5 @@ abstract class CompleteChannelFuture extends CompleteFuture<Void> implements Cha
     @Override
     public Channel channel() {
         return channel;
-    }
-
-    @Override
-    public Void getNow() {
-        return null;
     }
 }

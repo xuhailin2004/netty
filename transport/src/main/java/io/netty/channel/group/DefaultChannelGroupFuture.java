@@ -22,6 +22,7 @@ import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.Promise;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +36,7 @@ import java.util.Map;
 /**
  * The default {@link ChannelGroupFuture} implementation.
  */
-final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements ChannelGroupFuture {
+final class DefaultChannelGroupFuture extends DefaultPromise implements ChannelGroupFuture {
 
     private final ChannelGroup group;
     private final Map<Integer, ChannelFuture> futures;
@@ -151,25 +152,25 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
     }
 
     @Override
-    public DefaultChannelGroupFuture addListener(GenericFutureListener<? extends Future<Void>> listener) {
+    public DefaultChannelGroupFuture addListener(GenericFutureListener<? extends Future> listener) {
         super.addListener(listener);
         return this;
     }
 
     @Override
-    public DefaultChannelGroupFuture addListeners(GenericFutureListener<? extends Future<Void>>... listeners) {
+    public DefaultChannelGroupFuture addListeners(GenericFutureListener<? extends Future>... listeners) {
         super.addListeners(listeners);
         return this;
     }
 
     @Override
-    public DefaultChannelGroupFuture removeListener(GenericFutureListener<? extends Future<Void>> listener) {
+    public DefaultChannelGroupFuture removeListener(GenericFutureListener<? extends Future> listener) {
         super.removeListener(listener);
         return this;
     }
 
     @Override
-    public DefaultChannelGroupFuture removeListeners(GenericFutureListener<? extends Future<Void>>... listeners) {
+    public DefaultChannelGroupFuture removeListeners(GenericFutureListener<? extends Future>... listeners) {
         super.removeListeners(listeners);
         return this;
     }
@@ -204,7 +205,7 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
     }
 
     private void setSuccess0() {
-        super.setSuccess(null);
+        super.setSuccess();
     }
 
     private void setFailure0(ChannelGroupException cause) {
@@ -212,17 +213,17 @@ final class DefaultChannelGroupFuture extends DefaultPromise<Void> implements Ch
     }
 
     @Override
-    public DefaultChannelGroupFuture setSuccess(Void result) {
+    public Promise setSuccess() {
         throw new IllegalStateException();
     }
 
     @Override
-    public boolean trySuccess(Void result) {
+    public boolean trySuccess() {
         throw new IllegalStateException();
     }
 
     @Override
-    public DefaultChannelGroupFuture setFailure(Throwable cause) {
+    public Promise setFailure(Throwable cause) {
         throw new IllegalStateException();
     }
 

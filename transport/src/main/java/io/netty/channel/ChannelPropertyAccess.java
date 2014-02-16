@@ -17,13 +17,12 @@ package io.netty.channel;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.FutureFactory;
 
 /**
  * Provides common methods between {@link Channel} and {@link ChannelHandlerContext}.
  */
-interface ChannelPropertyAccess {
+interface ChannelPropertyAccess extends FutureFactory {
 
     /**
      * Return the assigned {@link ChannelPipeline}
@@ -35,22 +34,12 @@ interface ChannelPropertyAccess {
      */
     ByteBufAllocator alloc();
 
-    /**
-     * Return a new {@link ChannelPromise}.
-     */
+    @Override
     ChannelPromise newPromise();
 
-    /**
-     * Create a new {@link ChannelFuture} which is marked as successes already. So {@link ChannelFuture#isSuccess()}
-     * will return {@code true}. All {@link FutureListener} added to it will be notified directly. Also
-     * every call of blocking methods will just return without blocking.
-     */
+    @Override
     ChannelFuture newSucceededFuture();
 
-    /**
-     * Create a new {@link ChannelFuture} which is marked as fakued already. So {@link Future#isSuccess()}
-     * will return {@code false}. All {@link FutureListener} added to it will be notified directly. Also
-     * every call of blocking methods will just return without blocking.
-     */
+    @Override
     ChannelFuture newFailedFuture(Throwable cause);
 }

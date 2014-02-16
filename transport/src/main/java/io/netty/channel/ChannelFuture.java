@@ -162,7 +162,7 @@ import java.util.concurrent.TimeUnit;
  * }
  * </pre>
  */
-public interface ChannelFuture extends Future<Void> {
+public interface ChannelFuture extends Future {
 
     /**
      * Returns a channel where the I/O operation associated with this
@@ -171,16 +171,16 @@ public interface ChannelFuture extends Future<Void> {
     Channel channel();
 
     @Override
-    ChannelFuture addListener(GenericFutureListener<? extends Future<Void>> listener);
+    ChannelFuture addListener(GenericFutureListener<? extends Future> listener);
 
     @Override
-    ChannelFuture addListeners(GenericFutureListener<? extends Future<Void>>... listeners);
+    ChannelFuture addListeners(GenericFutureListener<? extends Future>... listeners);
 
     @Override
-    ChannelFuture removeListener(GenericFutureListener<? extends Future<Void>> listener);
+    ChannelFuture removeListener(GenericFutureListener<? extends Future> listener);
 
     @Override
-    ChannelFuture removeListeners(GenericFutureListener<? extends Future<Void>>... listeners);
+    ChannelFuture removeListeners(GenericFutureListener<? extends Future>... listeners);
 
     @Override
     ChannelFuture sync() throws InterruptedException;

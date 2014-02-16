@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.*;
 
 
-public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
+public class DefaultPromise implements Promise {
 
     private static final InternalLogger logger =
         InternalLoggerFactory.getInstance(DefaultPromise.class);
@@ -37,10 +37,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             return 0;
         }
     };
+
     private static final Signal SUCCESS = new Signal(DefaultPromise.class.getName() + ".SUCCESS");
+
     private final EventExecutor executor;
 
-    private volatile Object result;
+    private volatile Throwable cause;
     private Object listeners; // Can be ChannelFutureListener or DefaultChannelPromiseListeners
 
     /**
@@ -76,29 +78,22 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     @Override
     public boolean isDone() {
-        return result != null;
+        return cause != null;
     }
 
     @Override
     public boolean isSuccess() {
-        Object result = this.result;
-        if (result == null) {
-            return false;
-        }
-        return !(result instanceof CauseHolder);
+        return cause == SUCCESS;
     }
 
     @Override
     public Throwable cause() {
-        Object cause = result;
-        if (cause instanceof CauseHolder) {
-            return ((CauseHolder) cause).cause;
-        }
-        return null;
+        Throwable cause = this.cause;
+        return cause == SUCCESS? null : cause;
     }
 
     @Override
-    public Promise<V> addListener(GenericFutureListener<? extends Future<V>> listener) {
+    public Promise addListener(GenericFutureListener<? extends Future> listener) {
         if (listener == null) {
             throw new NullPointerException("listener");
         }
@@ -117,7 +112,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                         ((DefaultPromiseListeners) listeners).add(listener);
                     } else {
                         listeners = new DefaultPromiseListeners(
-                                (GenericFutureListener<? extends Future<V>>) listeners, listener);
+                                (GenericFutureListener<? extends Future>) listeners, listener);
                     }
                 }
                 return this;
@@ -129,12 +124,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> addListeners(GenericFutureListener<? extends Future<V>>... listeners) {
+    public Promise addListeners(GenericFutureListener<? extends Future>... listeners) {
         if (listeners == null) {
             throw new NullPointerException("listeners");
         }
 
-        for (GenericFutureListener<? extends Future<V>> l: listeners) {
+        for (GenericFutureListener<? extends Future> l: listeners) {
             if (l == null) {
                 break;
             }
@@ -144,7 +139,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> removeListener(GenericFutureListener<? extends Future<V>> listener) {
+    public Promise removeListener(GenericFutureListener<? extends Future> listener) {
         if (listener == null) {
             throw new NullPointerException("listener");
         }
@@ -167,12 +162,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> removeListeners(GenericFutureListener<? extends Future<V>>... listeners) {
+    public Promise removeListeners(GenericFutureListener<? extends Future>... listeners) {
         if (listeners == null) {
             throw new NullPointerException("listeners");
         }
 
-        for (GenericFutureListener<? extends Future<V>> l: listeners) {
+        for (GenericFutureListener<? extends Future> l: listeners) {
             if (l == null) {
                 break;
             }
@@ -182,14 +177,14 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> sync() throws InterruptedException {
+    public Promise sync() throws InterruptedException {
         await();
         rethrowIfFailed();
         return this;
     }
 
     @Override
-    public Promise<V> syncUninterruptibly() {
+    public Promise syncUninterruptibly() {
         awaitUninterruptibly();
         rethrowIfFailed();
         return this;
@@ -205,7 +200,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> await() throws InterruptedException {
+    public Promise await() throws InterruptedException {
         if (isDone()) {
             return this;
         }
@@ -240,7 +235,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> awaitUninterruptibly() {
+    public Promise awaitUninterruptibly() {
         if (isDone()) {
             return this;
         }
@@ -357,8 +352,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> setSuccess(V result) {
-        if (setSuccess0(result)) {
+    public Promise setSuccess() {
+        if (set(SUCCESS)) {
             notifyListeners();
             return this;
         }
@@ -366,8 +361,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public boolean trySuccess(V result) {
-        if (setSuccess0(result)) {
+    public boolean trySuccess() {
+        if (set(SUCCESS)) {
             notifyListeners();
             return true;
         }
@@ -375,8 +370,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     @Override
-    public Promise<V> setFailure(Throwable cause) {
-        if (setFailure0(cause)) {
+    public Promise setFailure(Throwable cause) {
+        if (set(cause)) {
             notifyListeners();
             return this;
         }
@@ -385,14 +380,14 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     @Override
     public boolean tryFailure(Throwable cause) {
-        if (setFailure0(cause)) {
+        if (set(cause)) {
             notifyListeners();
             return true;
         }
         return false;
     }
 
-    private boolean setFailure0(Throwable cause) {
+    private boolean set(Throwable cause) {
         if (isDone()) {
             return false;
         }
@@ -403,44 +398,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                 return false;
             }
 
-            result = new CauseHolder(cause);
+            this.cause = cause;
             if (hasWaiters()) {
                 notifyAll();
             }
         }
         return true;
-    }
-
-    private boolean setSuccess0(V result) {
-        if (isDone()) {
-            return false;
-        }
-
-        synchronized (this) {
-            // Allow only once.
-            if (isDone()) {
-                return false;
-            }
-            if (result == null) {
-                this.result = SUCCESS;
-            } else {
-                this.result = result;
-            }
-            if (hasWaiters()) {
-                notifyAll();
-            }
-        }
-        return true;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public V getNow() {
-        Object result = this.result;
-        if (result instanceof CauseHolder || result == SUCCESS) {
-            return null;
-        }
-        return (V) result;
     }
 
     private boolean hasWaiters() {
@@ -475,7 +438,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             if (listeners instanceof DefaultPromiseListeners) {
                 notifyListeners0(this, (DefaultPromiseListeners) listeners);
             } else {
-                notifyListener0(this, (GenericFutureListener<? extends Future<V>>) listeners);
+                notifyListener0(this, (GenericFutureListener<? extends Future>) listeners);
             }
             listeners = null;
         } else {
@@ -487,26 +450,24 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                     if (listeners instanceof DefaultPromiseListeners) {
                         notifyListeners0(DefaultPromise.this, (DefaultPromiseListeners) listeners);
                     } else {
-                        notifyListener0(DefaultPromise.this, (GenericFutureListener<? extends Future<V>>) listeners);
+                        notifyListener0(DefaultPromise.this, (GenericFutureListener<? extends Future>) listeners);
                     }
                 }
             });
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static void notifyListeners0(final Future<?> future,
+    private static void notifyListeners0(final Future future,
                                          DefaultPromiseListeners listeners) {
-        final GenericFutureListener<? extends Future<?>>[] a = listeners.listeners();
+        final GenericFutureListener<? extends Future>[] a = listeners.listeners();
         final int size = listeners.size();
         for (int i = 0; i < size; i ++) {
             notifyListener0(future, a[i]);
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public static void notifyListener(final EventExecutor eventExecutor, final Future<?> future,
-                               final GenericFutureListener<? extends Future<?>> l) {
+   public static void notifyListener(final EventExecutor eventExecutor, final Future future,
+                               final GenericFutureListener<? extends Future> l) {
         if (eventExecutor.inEventLoop()) {
             final Integer stackDepth = LISTENER_STACK_DEPTH.get();
             if (stackDepth < MAX_LISTENER_STACK_DEPTH) {
@@ -538,13 +499,6 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                         "An exception was thrown by " +
                                 GenericFutureListener.class.getSimpleName() + '.', t);
             }
-        }
-    }
-
-    private static final class CauseHolder {
-        final Throwable cause;
-        private CauseHolder(Throwable cause) {
-            this.cause = cause;
         }
     }
 }

@@ -15,13 +15,12 @@
  */
 package io.netty.channel;
 
-import io.netty.util.concurrent.AbstractFuture;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.concurrent.TimeUnit;
 
-final class VoidChannelPromise extends AbstractFuture<Void> implements ChannelFuture.Unsafe, ChannelPromise {
+final class VoidChannelPromise implements ChannelFuture.Unsafe, ChannelPromise {
 
     private final Channel channel;
 
@@ -38,25 +37,25 @@ final class VoidChannelPromise extends AbstractFuture<Void> implements ChannelFu
     }
 
     @Override
-    public ChannelPromise addListener(GenericFutureListener<? extends Future<Void>> listener) {
+    public ChannelPromise addListener(GenericFutureListener<? extends Future> listener) {
         fail();
         return this;
     }
 
     @Override
-    public ChannelPromise addListeners(GenericFutureListener<? extends Future<Void>>... listeners) {
+    public ChannelPromise addListeners(GenericFutureListener<? extends Future>... listeners) {
         fail();
         return this;
     }
 
     @Override
-    public ChannelPromise removeListener(GenericFutureListener<? extends Future<Void>> listener) {
+    public ChannelPromise removeListener(GenericFutureListener<? extends Future> listener) {
         // NOOP
         return this;
     }
 
     @Override
-    public ChannelPromise removeListeners(GenericFutureListener<? extends Future<Void>>... listeners) {
+    public ChannelPromise removeListeners(GenericFutureListener<? extends Future>... listeners) {
         // NOOP
         return this;
     }
@@ -152,20 +151,5 @@ final class VoidChannelPromise extends AbstractFuture<Void> implements ChannelFu
 
     private static void fail() {
         throw new IllegalStateException("void future");
-    }
-
-    @Override
-    public ChannelPromise setSuccess(Void result) {
-        return this;
-    }
-
-    @Override
-    public boolean trySuccess(Void result) {
-        return false;
-    }
-
-    @Override
-    public Void getNow() {
-        return null;
     }
 }

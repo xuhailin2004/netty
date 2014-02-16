@@ -22,32 +22,25 @@ import io.netty.util.concurrent.Promise;
 /**
  * Special {@link ChannelFuture} which is writable.
  */
-public interface ChannelPromise extends ChannelFuture, Promise<Void> {
+public interface ChannelPromise extends ChannelFuture, Promise {
 
     @Override
-    Channel channel();
-
-    @Override
-    ChannelPromise setSuccess(Void result);
-
     ChannelPromise setSuccess();
-
-    boolean trySuccess();
 
     @Override
     ChannelPromise setFailure(Throwable cause);
 
     @Override
-    ChannelPromise addListener(GenericFutureListener<? extends Future<Void>> listener);
+    ChannelPromise addListener(GenericFutureListener<? extends Future> listener);
 
     @Override
-    ChannelPromise addListeners(GenericFutureListener<? extends Future<Void>>... listeners);
+    ChannelPromise addListeners(GenericFutureListener<? extends Future>... listeners);
 
     @Override
-    ChannelPromise removeListener(GenericFutureListener<? extends Future<Void>> listener);
+    ChannelPromise removeListener(GenericFutureListener<? extends Future> listener);
 
     @Override
-    ChannelPromise removeListeners(GenericFutureListener<? extends Future<Void>>... listeners);
+    ChannelPromise removeListeners(GenericFutureListener<? extends Future>... listeners);
 
     @Override
     ChannelPromise sync() throws InterruptedException;

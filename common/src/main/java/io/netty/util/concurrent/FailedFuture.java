@@ -22,7 +22,7 @@ import io.netty.util.internal.PlatformDependent;
  * recommended to use {@link EventExecutor#newFailedFuture(Throwable)}
  * instead of calling the constructor of this future.
  */
-public final class FailedFuture<V> extends CompleteFuture<V> {
+public final class FailedFuture extends CompleteFuture {
 
     private final Throwable cause;
 
@@ -51,19 +51,14 @@ public final class FailedFuture<V> extends CompleteFuture<V> {
     }
 
     @Override
-    public Future<V> sync() {
+    public Future sync() {
         PlatformDependent.throwException(cause);
         return this;
     }
 
     @Override
-    public Future<V> syncUninterruptibly() {
+    public Future syncUninterruptibly() {
         PlatformDependent.throwException(cause);
         return this;
-    }
-
-    @Override
-    public V getNow() {
-        return null;
     }
 }

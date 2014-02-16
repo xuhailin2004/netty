@@ -15,15 +15,14 @@
  */
 package io.netty.util.concurrent;
 
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 
-/**
- * Abstract base class for {@link EventExecutor} implementations that use a {@link TaskScheduler} to support
- * scheduling tasks.
- */
-public abstract class AbstractEventExecutor extends AbstractEventExecutorWithoutScheduler {
+public abstract class AbstractEventExecutor extends AbstractExecutorService implements EventExecutor {
+    private final Future succeededFuture = new SucceededFuture(this);
     private final TaskScheduler scheduler;
 
     protected AbstractEventExecutor(TaskScheduler scheduler) {
@@ -31,6 +30,26 @@ public abstract class AbstractEventExecutor extends AbstractEventExecutorWithout
             throw new NullPointerException("scheduler");
         }
         this.scheduler = scheduler;
+    }
+
+    @Override
+    public EventExecutor next() {
+        return this;
+    }
+
+    @Override
+    public Promise newPromise() {
+        return new DefaultPromise(this);
+    }
+
+    @Override
+    public Future newSucceededFuture() {
+        return succeededFuture;
+    }
+
+    @Override
+    public Future newFailedFuture(Throwable cause) {
+        return new FailedFuture(this, cause);
     }
 
     @Override

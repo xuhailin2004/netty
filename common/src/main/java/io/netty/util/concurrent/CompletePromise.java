@@ -16,14 +16,14 @@
 package io.netty.util.concurrent;
 
 
-public abstract class CompletePromise<V> extends CompleteFuture<V> implements Promise<V> {
+public abstract class CompletePromise extends CompleteFuture implements Promise {
 
     protected CompletePromise(EventExecutor executor) {
         super(executor);
     }
 
     @Override
-    public Promise<V> setFailure(Throwable cause) {
+    public Promise setFailure(Throwable cause) {
         throw new IllegalStateException();
     }
 
@@ -33,52 +33,52 @@ public abstract class CompletePromise<V> extends CompleteFuture<V> implements Pr
     }
 
     @Override
-    public Promise<V> setSuccess(V result) {
+    public Promise setSuccess() {
         throw new IllegalStateException();
     }
 
     @Override
-    public boolean trySuccess(V result) {
+    public boolean trySuccess() {
         return false;
     }
 
     @Override
-    public Promise<V> await() throws InterruptedException {
+    public Promise await() throws InterruptedException {
         return this;
     }
 
     @Override
-    public Promise<V> awaitUninterruptibly() {
+    public Promise awaitUninterruptibly() {
         return this;
     }
 
     @Override
-    public Promise<V> syncUninterruptibly() {
+    public Promise syncUninterruptibly() {
         return this;
     }
 
     @Override
-    public Promise<V> sync() throws InterruptedException {
+    public Promise sync() throws InterruptedException {
         return this;
     }
 
     @Override
-    public Promise<V> addListener(GenericFutureListener<? extends Future<V>> listener) {
-        return (Promise<V>) super.addListener(listener);
+    public Promise addListener(GenericFutureListener<? extends Future> listener) {
+        return (Promise) super.addListener(listener);
     }
 
     @Override
-    public Promise<V> addListeners(GenericFutureListener<? extends Future<V>>... listeners) {
-        return (Promise<V>) super.addListeners(listeners);
+    public Promise addListeners(GenericFutureListener<? extends Future>... listeners) {
+        return (Promise) super.addListeners(listeners);
     }
 
     @Override
-    public Promise<V> removeListener(GenericFutureListener<? extends Future<V>> listener) {
-        return (Promise<V>) super.removeListener(listener);
+    public Promise removeListener(GenericFutureListener<? extends Future> listener) {
+        return (Promise) super.removeListener(listener);
     }
 
     @Override
-    public Promise<V> removeListeners(GenericFutureListener<? extends Future<V>>... listeners) {
-        return (Promise<V>) super.removeListeners(listeners);
+    public Promise removeListeners(GenericFutureListener<? extends Future>... listeners) {
+        return (Promise) super.removeListeners(listeners);
     }
 }

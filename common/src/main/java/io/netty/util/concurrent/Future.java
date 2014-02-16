@@ -15,14 +15,19 @@
  */
 package io.netty.util.concurrent;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 
 /**
  * The result of an asynchronous operation.
  */
-public interface Future<V> extends java.util.concurrent.Future<V> {
+public interface Future {
+
+    /**
+     * Returns {@code true} if and only if this future is
+     * complete, regardless of whether the operation was successful or failed.
+     */
+    boolean isDone();
 
     /**
      * Returns {@code true} if and only if the I/O operation was completed
@@ -46,7 +51,7 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      * {@linkplain #isDone() done}.  If this future is already
      * completed, the specified listener is notified immediately.
      */
-    Future<V> addListener(GenericFutureListener<? extends Future<V>> listener);
+    Future addListener(GenericFutureListener<? extends Future> listener);
 
     /**
      * Adds the specified listeners to this future.  The
@@ -54,7 +59,7 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      * {@linkplain #isDone() done}.  If this future is already
      * completed, the specified listeners are notified immediately.
      */
-    Future<V> addListeners(GenericFutureListener<? extends Future<V>>... listeners);
+    Future addListeners(GenericFutureListener<? extends Future>... listeners);
 
     /**
      * Removes the specified listener from this future.
@@ -63,7 +68,7 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      * listener is not associated with this future, this method
      * does nothing and returns silently.
      */
-    Future<V> removeListener(GenericFutureListener<? extends Future<V>> listener);
+    Future removeListener(GenericFutureListener<? extends Future> listener);
 
     /**
      * Removes the specified listeners from this future.
@@ -72,19 +77,19 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      * listeners are not associated with this future, this method
      * does nothing and returns silently.
      */
-    Future<V> removeListeners(GenericFutureListener<? extends Future<V>>... listeners);
+    Future removeListeners(GenericFutureListener<? extends Future>... listeners);
 
     /**
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
      */
-    Future<V> sync() throws InterruptedException;
+    Future sync() throws InterruptedException;
 
     /**
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
      */
-    Future<V> syncUninterruptibly();
+    Future syncUninterruptibly();
 
     /**
      * Waits for this future to be completed.
@@ -92,14 +97,14 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      * @throws InterruptedException
      *         if the current thread was interrupted
      */
-    Future<V> await() throws InterruptedException;
+    Future await() throws InterruptedException;
 
     /**
      * Waits for this future to be completed without
      * interruption.  This method catches an {@link InterruptedException} and
      * discards it silently.
      */
-    Future<V> awaitUninterruptibly();
+    Future awaitUninterruptibly();
 
     /**
      * Waits for this future to be completed within the
@@ -144,20 +149,4 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      *         the specified time limit
      */
     boolean awaitUninterruptibly(long timeoutMillis);
-
-    /**
-     * Return the result without blocking. If the future is not done yet this will return {@code null}.
-     *
-     * As it is possible that a {@code null} value is used to mark the future as successful you also need to check
-     * if the future is really done with {@link #isDone()} and not relay on the returned {@code null} value.
-     */
-    V getNow();
-
-    /**
-     * {@inheritDoc}
-     *
-     * If the cancelation was successful it will fail the future with an {@link CancellationException}.
-     */
-    @Override
-    boolean cancel(boolean mayInterruptIfRunning);
 }
